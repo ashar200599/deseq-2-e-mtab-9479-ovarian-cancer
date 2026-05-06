@@ -1,0 +1,535 @@
+---
+title: "deseq-2-e-mtab-9479-ovarian-cancer"
+author: "ashar"
+date: "2026-02-26"
+output: html_document
+---
+# ------------------------------------------------------------------------------
+# Setup
+# ------------------------------------------------------------------------------
+```{r}
+#Install packages
+
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("DESeq2")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install('EnhancedVolcano')
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("ComplexHeatmap")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("fontLiberation")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("clusterProfiler")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("AnnotationDbi")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("org.Hs.eg.db")
+
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("tidyverse")
+
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("fs")
+
+BiocManager::install(update = TRUE, ask = FALSE)
+```
+
+
+```{r}
+#Load library
+library(DESeq2)
+library(EnhancedVolcano)
+library(ggplot2)
+library(ComplexHeatmap)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(fontLiberation)
+library(clusterProfiler)
+library(tidyverse)
+library(circlize)  
+library(pheatmap)
+library(fs)
+```
+# ------------------------------------------------------------------------------
+# Make directory
+# ------------------------------------------------------------------------------
+```{r}
+parent_dir <- "file"
+child_folders <- c("script","plot", "results","data")
+
+# Combine and create all in one step
+dir_create(path(parent_dir, child_folders))
+
+```
+
+
+
+
+# ------------------------------------------------------------------------------
+# Download data
+# ------------------------------------------------------------------------------
+
+```{r}
+# Download raw counts from EBI
+counts = read.delim("https://www.ebi.ac.uk/gxa/experiments-content/E-MTAB-9479/resources/DifferentialSecondaryDataFiles.RnaSeq/raw-counts")
+head(counts)
+
+```
+
+```{r}
+# Download metadata
+metadata = read.delim("https://www.ebi.ac.uk/gxa/experiments-content/E-MTAB-9479/resources/ExperimentDesignFile.RnaSeq/experiment-design")
+head(metadata)
+```
+
+# ------------------------------------------------------------------------------
+# Wrangle data for DESeq2
+# ------------------------------------------------------------------------------
+
+
+
+```{r}
+# Counts data wrangling
+##DESeq expects the counts to have gene IDs as row names
+counts$Gene.ID <- as.character(counts$Gene.ID)
+rownames(counts) <- counts$Gene.ID
+head(counts)
+```
+
+```{r}
+##Separate gene ID with gene counts
+genes = counts[, c("Gene.ID", "Gene.Name"),drop=FALSE]
+genes = na.omit(genes) #optional
+counts = counts[, -c(1, 2)]
+head(counts)
+
+```
+
+```{r}
+# Export clean count data
+write.csv2(counts, file = "F:/deseq-2-e-mtab-9479-ovarian-cancer/file/data/count_data_clean.csv", row.names=F )
+
+```
+
+```{r}
+#Metadata Wrangling
+##DESeq expects the metadata matrix to have sample IDs in the rownames
+metadata$Run <- as.character(metadata$Run)
+rownames(metadata) = metadata$Run
+head(metadata)
+```
+
+```{r}
+
+##Only keep columns of interest
+metadata = metadata[, c("Sample.Characteristic.stimulus."), drop=FALSE] #Drop are used to make data frame with one column
+# Look at metadata to see how the variables change with respect to each other
+metadata
+```
+
+
+```{r}
+##Rename column
+colnames(metadata) = "treatment"
+```
+
+```{r}
+##Turn stimulus/treatment into a factor
+metadata$treatment = factor(metadata$treatment, levels =c("BMP2", "PBS"))
+
+```
+
+```{r}
+##Export clean metadata
+write.csv2(metadata, file = "F:/deseq-2-e-mtab-9479-ovarian-cancer/file/data/metadata_data_clean.csv" )
+```
+
+# ------------------------------------------------------------------------------
+# Run DESeq
+# ------------------------------------------------------------------------------
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design=~treatment)
+
+```
+
+
+```{r}
+# Ignore genes with low counts
+dds <- dds[rowSums(counts(dds)) >= 10, ]
+```
+
+```{r}
+# Run DESeq
+dds <- DESeq(dds)
+
+```
+
+```{r}
+# Compare expression
+res <- results(dds, contrast=c("treatment", "BMP2", "PBS"), alpha=0.05)
+
+na.omit(res)
+
+```
+# ------------------------------------------------------------------------------
+# Top 100 gene
+# ------------------------------------------------------------------------------
+
+```{r}
+# Convert DESeq2 result into dataframe
+res_df <- as.data.frame(res)
+```
+
+```{r}
+#Top 100 Gene
+##Filter pvalue and Log2FoldChange
+res_df_filter <- res_df[(res_df$padj < 0.05) & (abs(res_df$log2FoldChange) >= 1),]
+res_df_filter <- na.omit(res_df)
+
+##Ordered padj
+top100_gene_ordered <- res_df_filter[order(res_df_filter$padj, res_df_filter$log2FoldChange), ]
+
+##Top100 gene base on padj and fold2 change
+top100_gene <- head(top100_gene_ordered, 100)
+top100_gene_df <- as.data.frame(top100_gene)
+
+```
+# ------------------------------------------------------------------------------
+# Gene Annotation
+# ------------------------------------------------------------------------------
+
+
+```{r}
+#Add gene ID column
+res_df_filter$Gene.ID <- rownames(res_df_filter)
+top100_gene_df$Gene.ID <- rownames(top100_gene_df)
+```
+
+```{r}
+#Annotate gene ID
+res_df_filter$Gene.Names <- mapIds(org.Hs.eg.db,keys = rownames(res_df_filter), keytype = "ENSEMBL", column = "SYMBOL")
+
+top100_gene_df$Gene.Names <- mapIds(org.Hs.eg.db,keys = rownames(top100_gene_df), keytype = "ENSEMBL", column = "SYMBOL")
+top100_gene_df_annotate <- top100_gene_df
+
+
+#Remove NA
+top100_gene_df_annotate <- na.omit(top100_gene_df_annotate)
+
+```
+
+```{r}
+#Export Deseq2 result with annotation to Excel (optional for GO and pathway enrichment)
+write.csv2(top100_gene_df_annotate, file="F:/deseq-2-e-mtab-9479-ovarian-cancer/file/results/DESeq2_results_BMP_vs_PBS.csv")
+```
+
+# ------------------------------------------------------------------------------
+# Visualization
+# -----------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------------
+# 1.Volcano plot
+# -----------------------------------------------------------------------------
+
+```{r}
+#Set upregulated and Downregulated gene
+up <- top100_gene_df_annotate[top100_gene_df_annotate$log2FoldChange > 1 & top100_gene_df_annotate$padj < 0.05,]
+
+#Export upregulated gene
+write.csv2(up, file="F:/deseq-2-e-mtab-9479-ovarian-cancer/file/results/top100_gene_upregulated_result.csv")
+
+down <- top100_gene_df_annotate[top100_gene_df_annotate$log2FoldChange < -1 & top100_gene_df_annotate$padj < 0.05, ]
+
+#Export downregulated gene
+write.csv2(down, file="F:/deseq-2-e-mtab-9479-ovarian-cancer/file/results/top100_gene_downregulated_result.csv")
+
+```
+
+```{r}
+#Merge upregulated and downregulated gene
+top100_gene_bind <- rbind(up, down)
+```
+
+```{r}
+#Enhanced volcano
+enhancedvolcano <- EnhancedVolcano(
+  top100_gene_df_annotate,
+  lab      = top100_gene_df_annotate$Gene.Names,
+  x        = 'log2FoldChange',
+  y        = 'padj',
+  selectLab = top100_gene_bind$Gene.Names,
+  
+  # Title & subtitle
+  title    = "Top 100 Gene Expression of BMP Signaling in Ovarian Cancer",
+  subtitle = paste0("p-adj < 0.05  |  |log2FC| > 2"),
+  
+  # Thresholds
+  pCutoff  = 0.05,
+  FCcutoff = 2,
+  
+  # Label styling
+  labSize         = 3.5,
+  drawConnectors  = TRUE,      # lines from label to dot
+  widthConnectors = 0.4,
+  
+  # Point styling
+  pointSize = 2.0,
+  colAlpha  = 0.7,
+  
+  # Colors: NS, log2FC only, p only, significant
+  col = c("grey70", "steelblue", "orange", "red2"),
+  
+  # Legend
+  legendPosition = "right",
+  legendLabSize  = 10,
+  
+  # Theme
+  gridlines.major = FALSE,
+  gridlines.minor = FALSE
+)
+enhancedvolcano
+```
+
+```{r}
+#Export result image
+png("F:/deseq-2-e-mtab-9479-ovarian-cancer/file/plot/volcano_plot.png", 
+    res    = 300, 
+    height = 3000, 
+    width  = 3000,
+    units  = "px",      # explicitly state pixels
+    bg     = "white")   # white background (not transparent)
+
+print(enhancedvolcano)
+dev.off()
+```
+# ------------------------------------------------------------------------------
+# 2.Heatmap
+# -----------------------------------------------------------------------------
+
+
+```{r}
+
+# 1. Extract normalized counts for your genes
+mat <- counts(dds, normalized = TRUE)[rownames(top100_gene_df_annotate), ]
+mat <- mat[!is.na(rownames(mat)), ]
+
+# ── Annotate Ensembl IDs → gene symbols ──────────────────────────────────────
+symbols <- mapIds(org.Hs.eg.db,
+                  keys      = rownames(mat),
+                  column    = "SYMBOL",
+                  keytype   = "ENSEMBL",
+                  multiVals = "first")
+
+# Remove NAs and empty symbols
+symbols <- symbols[!is.na(symbols) & symbols != ""]
+mat     <- mat[names(symbols), ]
+rownames(mat) <- symbols
+
+# 2. Z-score scale by row (gene-wise)
+mat_scaled <- t(scale(t(mat)))
+
+# 3. Define color mapping centered on 0
+col_fun <- colorRamp2(
+  c(-2, 0, 2),
+  c("blue", "white", "red")
+)
+
+# ── Define sample groups ──────────────────────────────────────────────────────
+group_annotation <- HeatmapAnnotation(
+  Group = c(
+    ERR4507912 = "BMP",
+    ERR4507913 = "BMP",
+    ERR4507911 = "BMP",
+    ERR4507914 = "PBS/Control",
+    ERR4507916 = "PBS/Control",
+    ERR4507915 = "PBS/Control"
+  )[colnames(mat_scaled)],
+  col = list(
+    Group = c(
+      "BMP"         = "#E64B35",   # red
+      "PBS/Control" = "#4DBBD5"    # blue
+    )
+  ),
+  annotation_label = "Group",
+  annotation_name_gp = gpar(fontsize = 9, fontface = "bold")
+)
+
+# 4. Build heatmap
+heatmap <- Heatmap(
+  mat_scaled,
+  name             = "Z-score",
+  col              = col_fun,
+  # Column annotation (group bar on top)
+  top_annotation   = group_annotation,        # ← group bar added here
+  # Row settings
+  cluster_rows     = TRUE,
+  show_row_dend    = TRUE,
+  row_labels       = rownames(mat_scaled),
+  row_names_gp     = gpar(fontsize = 8),
+  # Column settings
+  cluster_columns  = TRUE,
+  column_labels    = colnames(mat_scaled),
+  column_names_rot = 45,
+  column_names_gp  = gpar(fontsize = 9),
+  # Title
+  column_title     = "Top 100 Gene Expression of BMP Signaling in Ovarian Cancer",
+  column_title_gp  = gpar(fontsize = 12, fontface = "bold"),
+  # Misc
+  show_row_names    = TRUE,
+  show_column_names = TRUE,
+  heatmap_legend_param = list(
+    title  = "Z-score",
+    at     = c(-2, -1, 0, 1, 2),
+    labels = c("-2", "-1", "0", "1", "2")
+  )
+)
+
+```
+
+```{r}
+#Export result image
+png("F:/deseq-2-e-mtab-9479-ovarian-cancer/file/plot/heatmap_top100.png", 
+    res    = 300, 
+    height = 5000, 
+    width  = 5000,
+    units  = "px",      # explicitly state pixels
+    bg     = "white")   # white background (not transparent)
+
+print(heatmap)
+dev.off()
+
+```
+# ------------------------------------------------------------------------------
+# GO Enrichment and KEGG pathways
+# -----------------------------------------------------------------------------
+
+```{r}
+#Take data to test
+genes_to_test <- rownames(top100_gene_df_annotate)
+
+```
+
+```{r}
+#GO Analysis
+GO_results_BP <- enrichGO(gene = genes_to_test, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP", pvalueCutoff = 0.5)
+GO_results_MF <- enrichGO(gene = genes_to_test, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "MF", pvalueCutoff = 0.5)
+GO_results_CC <- enrichGO(gene = genes_to_test, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "CC", pvalueCutoff = 0.5)
+
+```
+
+```{r}
+
+#GO barplot
+fit_BP <- plot(barplot(GO_results_BP, showCategory = 20))
+fit_MF <- plot(barplot(GO_results_MF, showCategory = 20))
+fit_CC <- plot(barplot(GO_results_CC, showCategory = 20))
+```
+
+```{r}
+#Export GO barplot
+png("F:/deseq-2-e-mtab-9479-ovarian-cancer/file/plot/GO barplot_BP.png", res = 300, width=3000, height = 5000)
+print(fit_BP)
+
+dev.off()
+
+png("F:/deseq-2-e-mtab-9479-ovarian-cancer/file/plot/GO barplot_MF.png", res = 300, width=3000, height = 5000)
+print(fit_MF)
+
+dev.off()
+
+png("F:/deseq-2-e-mtab-9479-ovarian-cancer/file/plot/GO barplot_CC.png", res = 300, width=3000, height = 5000)
+print(fit_CC)
+
+dev.off()
+
+```
+
+# ------------------------------------------------------------------------------
+# KEGG Pathway Enrichment
+# -----------------------------------------------------------------------------
+
+```{r}
+# Convert Ensembl IDs to Entrez IDs (required by enrichKEGG)
+entrez_ids <- mapIds(
+  org.Hs.eg.db,
+  keys     = rownames(top100_gene_df_annotate),
+  keytype  = "ENSEMBL",
+  column   = "ENTREZID",
+  multiVals = "first"
+)
+
+# Remove NAs
+entrez_ids <- na.omit(entrez_ids)
+```
+
+```{r}
+# KEGG enrichment analysis
+kegg_results <- enrichKEGG(
+  gene          = entrez_ids,
+  organism      = "hsa",       # Homo sapiens
+  pvalueCutoff  = 0.05,
+  qvalueCutoff  = 0.2
+)
+```
+
+```{r}
+# Barplot - top 20 KEGG pathways
+kegg_barplot <- barplot(kegg_results, showCategory = 20) +
+  labs(title = "KEGG Pathway Enrichment (BMP vs PBS)",
+       x = "Gene Count")
+
+kegg_barplot
+```
+
+```{r}
+```
+
+```{r}
+# Export KEGG plots
+png("F:/deseq-2-e-mtab-9479-ovarian-cancer/file/plot/KEGG_barplot.png",
+    res = 300, width = 3000, height = 4000, units = "px", bg = "white")
+print(kegg_barplot)
+dev.off()
+
+```
+
+```{r}
+# Export KEGG results table
+write.csv2(
+  as.data.frame(kegg_results),
+  file = "F:/deseq-2-e-mtab-9479-ovarian-cancer/file/results/KEGG_results.csv"
+)
+```
+
+```{r}
+#Save R environemnt(optional)
+save.image(file = "deseq-2-e-mtab-9479-ovarian-cancer.RData")
+```
