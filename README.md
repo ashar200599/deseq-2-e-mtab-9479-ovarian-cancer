@@ -1,4 +1,4 @@
-<img width="66" height="81" alt="image" src="https://github.com/user-attachments/assets/e633662e-3a7f-46be-9f3b-e151df094fd0" />eseq2 analysis using ovarian cancer cell sample
+
 
 ![R](https://img.shields.io/badge/R-4.5.2-276DC3?style=flat&logo=r)
 ![DESeq2](https://img.shields.io/badge/DESeq2-Bioconductor-brightgreen)
