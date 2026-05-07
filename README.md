@@ -109,7 +109,7 @@ deseq-2-e-mtab-9479-ovarian-cancer/
 ## 👤 Author
 
 **Ashar Kurnia** 
-[![GitHub](https://img.shields.io/badge/Github-asharkurnia-blue)](ttps://github.com/ashar200599)
+[![GitHub](https://img.shields.io/badge/Github-asharkurnia-blue)](https://github.com/ashar200599)
 
 ---
 
