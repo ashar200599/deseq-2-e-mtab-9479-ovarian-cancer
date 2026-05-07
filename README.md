@@ -42,8 +42,10 @@ A complete Deseq2 analysis, GO enrichment, and KEGG pathway analysis using RNA-s
 ![GO CC](https://github.com/ashar200599/deseq-2-e-mtab-9479-ovarian-cancer/blob/046b763ca59fdd54478d72a1cc9f7e35b0d18dc1/file/plot/GO%20barplot_CC.png)
 
 ### KEGG plot
-![KEGG](https://github.com/ashar200599/deseq-2-e-mtab-9479-ovarian-cancer/blob/046b763ca59fdd54478d72a1cc9f7e35b0d18dc1/file/plot/KEGG_barplot.png)
+![KEGG_Plot](https://github.com/ashar200599/deseq-2-e-mtab-9479-ovarian-cancer/blob/046b763ca59fdd54478d72a1cc9f7e35b0d18dc1/file/plot/KEGG_barplot.png)
 
+### KEGG pathways
+![KEGG_pathways](https://github.com/ashar200599/deseq-2-e-mtab-9479-ovarian-cancer/blob/d848d5cdad8902d864bde5c91f5f5929ac08fab1/file/results/KEGG_TGF-beta_signaling_pathway_.png)
 
 
 ---
