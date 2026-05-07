@@ -1,4 +1,4 @@
-eseq2 analysis using ovarian cancer cell sample
+<img width="66" height="81" alt="image" src="https://github.com/user-attachments/assets/e633662e-3a7f-46be-9f3b-e151df094fd0" />eseq2 analysis using ovarian cancer cell sample
 
 ![R](https://img.shields.io/badge/R-4.5.2-276DC3?style=flat&logo=r)
 ![DESeq2](https://img.shields.io/badge/DESeq2-Bioconductor-brightgreen)
@@ -7,19 +7,19 @@ eseq2 analysis using ovarian cancer cell sample
 ![Dataset](https://img.shields.io/badge/EBI-E--MTAB--9479-pink)
 
 
-A complete Deseq2 analysis, GO enrichment and KEGG pathway analysis using RNA-seq datasets of OC samples were obtained from EBI (https://www.ebi.ac.uk/gxa/experiments/E-MTAB-9479/Experiment%20Design).  
+A complete Deseq2 analysis, GO enrichment, and KEGG pathway analysis using RNA-seq datasets of OC samples were obtained from EBI (https://www.ebi.ac.uk/gxa/experiments/E-MTAB-9479/Experiment%20Design).  
 
 ---
 
 ## 🧬 Biological Question
 
-> What happens to cell when they are given BMP treatment?
+> What happens to the cells when they are given BMP treatment?
 
 | | |
 |---|---|
 | **Dataset** | E-MTAB-9479 — Homo sapiens,ovarian cancer cell |
-| **Comparison** | BMP treatment vs Control |
-| **Key finding** | BMP induction caused upregulated ID family gene, which correlated bHLH inhibition leading to ovarian cancer|
+| **Comparison** | BMP treatment vs PBS/Control |
+| **Key finding** | BMP induction caused TGF-β pathway activation, which has contributed to upregulated genes like SMAD6, SMAD7, ID1-4, and SERPINE1 that can drive ovarian cancer |
 | **Paper** |Fukuda et al., Cell Death Discovery 6, no. 1, 1033–1049, 2020 |
 
 ---
@@ -69,6 +69,7 @@ deseq-2-e-mtab-9479-ovarian-cancer/
 │   │   ├── DESeq2_results_BMP_vs_PBS.csv
 │   │   ├── top100_upregulated_gene_result.csv
 │   │   |── top100_downregulated_gene_result.csv
+|   |   |── KEGG_TGF-beta_signaling_pathway_
 │   └── plots/
 │       ├── volcano_plot.png
 │       ├── heatmap_top100.png
@@ -94,6 +95,18 @@ deseq-2-e-mtab-9479-ovarian-cancer/
 |Visualization| EnhancedVolcano, complexHeatmap | Volcano, heatmap
 |GO Enrichment and KEGG pathways | clusterProfiler | Biological Process (BP), Molecular Function (MF), Cellular Component (CC)
 
+## 📈 Key Results
+
+| Direction | Genes | Biological Meaning |
+|---|---|---|
+| ⬆️ Upregulated in BMP induction | *SMAD6*, *SMAD7*, *ID1–4*, *SERPINE1* | TGF-β pathway activation |
+| ⬇️ Downregulated in BM Induction | *CISH*, *C15orf39*, *VAV3*, *ARL4D*, *PARD6B*, *NUAK2*, *SYBU*, *KLF11* | Loss of tumor suppressor|
+
+**Conclusion:** BMP signaling has tumor-promoting effects in OC, and BMP inhibitors might be useful therapeutic agents for OC patients
+
 ---
 
+## 👤 Author
+
+**Ashar Kurnia** 
 
