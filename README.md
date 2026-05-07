@@ -93,7 +93,7 @@ deseq-2-e-mtab-9479-ovarian-cancer/
 |Significance | Manual |padj < 0.05 AND |log2FoldChange| >= 1
 |Gene Annotation | AnnotationDbi and org.Hs.eg.db | keytype = "ENSEMBL", column = "SYMBOL"
 |Visualization| EnhancedVolcano, complexHeatmap | Volcano, heatmap
-|GO Enrichment and KEGG pathways | clusterProfiler | Biological Process (BP), Molecular Function (MF), Cellular Component (CC)
+|GO and KEGG pathways enrichment | clusterProfiler | Biological Process (BP), Molecular Function (MF), Cellular Component (CC)
 
 ## 📈 Key Results
 
